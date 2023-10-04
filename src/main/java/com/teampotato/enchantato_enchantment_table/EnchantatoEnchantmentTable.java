@@ -4,6 +4,7 @@ import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.Util;
 import net.minecraft.core.Registry;
 import net.minecraft.util.Mth;
+import net.minecraft.util.RandomSource;
 import net.minecraft.util.random.WeightedRandom;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -14,28 +15,26 @@ import net.minecraftforge.common.ForgeConfigSpec;
 import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.config.ModConfig;
+import net.minecraftforge.registries.ForgeRegistries;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
-import java.util.Random;
 
 @Mod("enchantato_enchantment_table")
 @SuppressWarnings("DataFlowIssue")
 public class EnchantatoEnchantmentTable {
-    public static @NotNull List<EnchantmentInstance> selectEnchantment(Random pRandom, @NotNull ItemStack pItemStack, int pLevel, boolean pAllowTreasure) {
+    public static @NotNull List<EnchantmentInstance> selectEnchantment(RandomSource pRandom, @NotNull ItemStack pItemStack, int pLevel, boolean pAllowTreasure) {
         List<EnchantmentInstance> list = new ObjectArrayList<>();
-        int i = pItemStack.getItemEnchantability();
-        if (i <= 0) {
-            return list;
-        } else {
+        int i = pItemStack.getEnchantmentValue();
+        if (i > 0) {
             pLevel += 1 + pRandom.nextInt(i / 4 + 1) + pRandom.nextInt(i / 4 + 1);
             float f = (pRandom.nextFloat() + pRandom.nextFloat() - 1.0F) * 0.15F;
-            pLevel = Mth.clamp(Math.round((float)pLevel + (float)pLevel * f), 1, Integer.MAX_VALUE);
+            pLevel = Mth.clamp(Math.round((float) pLevel + (float) pLevel * f), 1, Integer.MAX_VALUE);
             List<EnchantmentInstance> list1 = getAvailableEnchantmentResults(pLevel, pItemStack, pAllowTreasure);
             if (!list1.isEmpty()) {
                 WeightedRandom.getRandomItem(pRandom, list1).ifPresent(list::add);
 
-                while(pRandom.nextInt(50) <= pLevel) {
+                while (pRandom.nextInt(50) <= pLevel) {
                     if (!list.isEmpty()) {
                         EnchantmentHelper.filterCompatibleEnchantments(list1, Util.lastOf(list));
                     }
@@ -49,8 +48,8 @@ public class EnchantatoEnchantmentTable {
                 }
             }
 
-            return list;
         }
+        return list;
     }
 
     public static @NotNull List<EnchantmentInstance> getAvailableEnchantmentResults(int pLevel, @NotNull ItemStack pStack, boolean pAllowTreasure) {
@@ -58,7 +57,7 @@ public class EnchantatoEnchantmentTable {
         boolean flag = pStack.is(Items.BOOK);
 
         for(Enchantment enchantment : Registry.ENCHANTMENT) {
-            if ((!enchantment.isTreasureOnly() || pAllowTreasure) && enchantment.isDiscoverable() && (onGetEnchantments(enchantment ,pStack) || (flag && enchantment.isAllowedOnBooks()))) {
+            if ((!enchantment.isTreasureOnly() || pAllowTreasure) && enchantment.isDiscoverable() && (onGetEnchantments(enchantment, pStack) || (flag && enchantment.isAllowedOnBooks()))) {
                 for(int i = enchantment.getMaxLevel(); i > enchantment.getMinLevel() - 1; --i) {
                     if (pLevel >= enchantment.getMinCost(i) && pLevel <= enchantment.getMaxCost(i)) {
                         list.add(new EnchantmentInstance(enchantment, i));
@@ -73,10 +72,10 @@ public class EnchantatoEnchantmentTable {
 
     private static boolean onGetEnchantments(@NotNull Enchantment instance, ItemStack stack) {
         if (!INVERTED_MODE.get()) {
-            if (ENCHANTMENT_LIST.get().contains(instance.getRegistryName().toString())) return false;
+            if (ENCHANTMENT_LIST.get().contains(ForgeRegistries.ENCHANTMENTS.getKey(instance).toString())) return false;
             return instance.canApplyAtEnchantingTable(stack);
         } else {
-            return instance.canApplyAtEnchantingTable(stack) && ENCHANTMENT_LIST.get().contains(instance.getRegistryName().toString());
+            return instance.canApplyAtEnchantingTable(stack) && ENCHANTMENT_LIST.get().contains(ForgeRegistries.ENCHANTMENTS.getKey(instance).toString());
         }
     }
 

@@ -1,16 +1,15 @@
 package com.teampotato.enchantato_enchantment_table;
 
-import com.google.common.collect.Lists;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import net.minecraft.enchantment.Enchantment;
-import net.minecraft.enchantment.EnchantmentData;
-import net.minecraft.enchantment.EnchantmentHelper;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.util.Util;
-import net.minecraft.util.WeightedRandom;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.registry.Registry;
+import net.minecraft.Util;
+import net.minecraft.core.Registry;
+import net.minecraft.util.Mth;
+import net.minecraft.util.random.WeightedRandom;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.item.enchantment.Enchantment;
+import net.minecraft.world.item.enchantment.EnchantmentHelper;
+import net.minecraft.world.item.enchantment.EnchantmentInstance;
 import net.minecraftforge.common.ForgeConfigSpec;
 import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
@@ -23,36 +22,46 @@ import java.util.Random;
 @Mod("enchantato_enchantment_table")
 @SuppressWarnings("DataFlowIssue")
 public class EnchantatoEnchantmentTable {
-    public static @NotNull List<EnchantmentData> selectEnchantment(Random pRandom, @NotNull ItemStack pItemStack, int pLevel, boolean pAllowTreasure) {
-        List<EnchantmentData> list = new ObjectArrayList<>();
+    public static @NotNull List<EnchantmentInstance> selectEnchantment(Random pRandom, @NotNull ItemStack pItemStack, int pLevel, boolean pAllowTreasure) {
+        List<EnchantmentInstance> list = new ObjectArrayList<>();
         int i = pItemStack.getItemEnchantability();
-        if (i > 0) {
-            pLevel = pLevel + 1 + pRandom.nextInt(i / 4 + 1) + pRandom.nextInt(i / 4 + 1);
+        if (i <= 0) {
+            return list;
+        } else {
+            pLevel += 1 + pRandom.nextInt(i / 4 + 1) + pRandom.nextInt(i / 4 + 1);
             float f = (pRandom.nextFloat() + pRandom.nextFloat() - 1.0F) * 0.15F;
-            pLevel = MathHelper.clamp(Math.round((float) pLevel + (float) pLevel * f), 1, Integer.MAX_VALUE);
-            List<EnchantmentData> availableEnchantmentResults = getAvailableEnchantmentResults(pLevel, pItemStack, pAllowTreasure);
-            if (!availableEnchantmentResults.isEmpty()) {
-                list.add(WeightedRandom.getRandomItem(pRandom, availableEnchantmentResults));
-                while (pRandom.nextInt(50) <= pLevel) {
-                    EnchantmentHelper.filterCompatibleEnchantments(availableEnchantmentResults, Util.lastOf(list));
-                    if (availableEnchantmentResults.isEmpty()) break;
-                    list.add(WeightedRandom.getRandomItem(pRandom, availableEnchantmentResults));
+            pLevel = Mth.clamp(Math.round((float)pLevel + (float)pLevel * f), 1, Integer.MAX_VALUE);
+            List<EnchantmentInstance> list1 = getAvailableEnchantmentResults(pLevel, pItemStack, pAllowTreasure);
+            if (!list1.isEmpty()) {
+                WeightedRandom.getRandomItem(pRandom, list1).ifPresent(list::add);
+
+                while(pRandom.nextInt(50) <= pLevel) {
+                    if (!list.isEmpty()) {
+                        EnchantmentHelper.filterCompatibleEnchantments(list1, Util.lastOf(list));
+                    }
+
+                    if (list1.isEmpty()) {
+                        break;
+                    }
+
+                    WeightedRandom.getRandomItem(pRandom, list1).ifPresent(list::add);
                     pLevel /= 2;
                 }
             }
+
+            return list;
         }
-        return list;
     }
 
-    public static @NotNull List<EnchantmentData> getAvailableEnchantmentResults(int pLevel, @NotNull ItemStack pStack, boolean pAllowTreasure) {
-        List<EnchantmentData> list = Lists.newArrayList();
-        boolean flag = pStack.getItem() == Items.BOOK;
+    public static @NotNull List<EnchantmentInstance> getAvailableEnchantmentResults(int pLevel, @NotNull ItemStack pStack, boolean pAllowTreasure) {
+        List<EnchantmentInstance> list = new ObjectArrayList<>();
+        boolean flag = pStack.is(Items.BOOK);
 
         for(Enchantment enchantment : Registry.ENCHANTMENT) {
-            if ((!enchantment.isTreasureOnly() || pAllowTreasure) && enchantment.isDiscoverable() && (onGetEnchantments(enchantment, pStack) || (flag && enchantment.isAllowedOnBooks()))) {
+            if ((!enchantment.isTreasureOnly() || pAllowTreasure) && enchantment.isDiscoverable() && (onGetEnchantments(enchantment ,pStack) || (flag && enchantment.isAllowedOnBooks()))) {
                 for(int i = enchantment.getMaxLevel(); i > enchantment.getMinLevel() - 1; --i) {
                     if (pLevel >= enchantment.getMinCost(i) && pLevel <= enchantment.getMaxCost(i)) {
-                        list.add(new EnchantmentData(enchantment, i));
+                        list.add(new EnchantmentInstance(enchantment, i));
                         break;
                     }
                 }

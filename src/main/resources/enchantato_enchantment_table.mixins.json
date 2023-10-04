@@ -1,0 +1,13 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.teampotato.enchantato_enchantment_table.mixin",
+  "compatibilityLevel": "JAVA_8",
+  "refmap": "enchantato_enchantment_table.refmap.json",
+  "injectors": {
+    "defaultRequire": 1
+  },
+  "mixins": [
+    "EnchantmentContainerMixin"
+  ]
+}

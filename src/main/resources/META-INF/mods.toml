@@ -1,0 +1,12 @@
+modLoader="javafml"
+loaderVersion="[36,)"
+license="LGPL-v3"
+
+[[mods]]
+modId="enchantato_enchantment_table"
+version="${file.jarVersion}"
+displayName="EnchantatoEnchantmentTable"
+authors="TeamPotato"
+description='''
+A Minecraft mod.
+'''

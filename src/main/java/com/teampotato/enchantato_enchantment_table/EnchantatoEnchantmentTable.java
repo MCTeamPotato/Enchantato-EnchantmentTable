@@ -2,7 +2,7 @@ package com.teampotato.enchantato_enchantment_table;
 
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.Util;
-import net.minecraft.core.Registry;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.util.random.WeightedRandom;
@@ -26,15 +26,17 @@ public class EnchantatoEnchantmentTable {
     public static @NotNull List<EnchantmentInstance> selectEnchantment(RandomSource pRandom, @NotNull ItemStack pItemStack, int pLevel, boolean pAllowTreasure) {
         List<EnchantmentInstance> list = new ObjectArrayList<>();
         int i = pItemStack.getEnchantmentValue();
-        if (i > 0) {
+        if (i <= 0) {
+            return list;
+        } else {
             pLevel += 1 + pRandom.nextInt(i / 4 + 1) + pRandom.nextInt(i / 4 + 1);
             float f = (pRandom.nextFloat() + pRandom.nextFloat() - 1.0F) * 0.15F;
-            pLevel = Mth.clamp(Math.round((float) pLevel + (float) pLevel * f), 1, Integer.MAX_VALUE);
+            pLevel = Mth.clamp(Math.round((float)pLevel + (float)pLevel * f), 1, Integer.MAX_VALUE);
             List<EnchantmentInstance> list1 = getAvailableEnchantmentResults(pLevel, pItemStack, pAllowTreasure);
             if (!list1.isEmpty()) {
                 WeightedRandom.getRandomItem(pRandom, list1).ifPresent(list::add);
 
-                while (pRandom.nextInt(50) <= pLevel) {
+                while(pRandom.nextInt(50) <= pLevel) {
                     if (!list.isEmpty()) {
                         EnchantmentHelper.filterCompatibleEnchantments(list1, Util.lastOf(list));
                     }
@@ -48,15 +50,15 @@ public class EnchantatoEnchantmentTable {
                 }
             }
 
+            return list;
         }
-        return list;
     }
 
     public static @NotNull List<EnchantmentInstance> getAvailableEnchantmentResults(int pLevel, @NotNull ItemStack pStack, boolean pAllowTreasure) {
         List<EnchantmentInstance> list = new ObjectArrayList<>();
         boolean flag = pStack.is(Items.BOOK);
 
-        for(Enchantment enchantment : Registry.ENCHANTMENT) {
+        for(Enchantment enchantment : BuiltInRegistries.ENCHANTMENT) {
             if ((!enchantment.isTreasureOnly() || pAllowTreasure) && enchantment.isDiscoverable() && (onGetEnchantments(enchantment, pStack) || (flag && enchantment.isAllowedOnBooks()))) {
                 for(int i = enchantment.getMaxLevel(); i > enchantment.getMinLevel() - 1; --i) {
                     if (pLevel >= enchantment.getMinCost(i) && pLevel <= enchantment.getMaxCost(i)) {

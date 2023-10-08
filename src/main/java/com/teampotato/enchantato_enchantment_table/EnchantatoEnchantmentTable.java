@@ -59,7 +59,7 @@ public class EnchantatoEnchantmentTable {
         boolean flag = pStack.is(Items.BOOK);
 
         for(Enchantment enchantment : BuiltInRegistries.ENCHANTMENT) {
-            if ((!enchantment.isTreasureOnly() || pAllowTreasure) && enchantment.isDiscoverable() && (onGetEnchantments(enchantment, pStack) || (flag && enchantment.isAllowedOnBooks()))) {
+            if ((!enchantment.isTreasureOnly() || pAllowTreasure) && enchantment.isDiscoverable() && onGetEnchantments(enchantment, pStack, flag)) {
                 for(int i = enchantment.getMaxLevel(); i > enchantment.getMinLevel() - 1; --i) {
                     if (pLevel >= enchantment.getMinCost(i) && pLevel <= enchantment.getMaxCost(i)) {
                         list.add(new EnchantmentInstance(enchantment, i));
@@ -72,12 +72,12 @@ public class EnchantatoEnchantmentTable {
         return list;
     }
 
-    private static boolean onGetEnchantments(@NotNull Enchantment instance, ItemStack stack) {
+    private static boolean onGetEnchantments(@NotNull Enchantment enchantment, ItemStack pStack, boolean flag) {
         if (!INVERTED_MODE.get()) {
-            if (ENCHANTMENT_LIST.get().contains(ForgeRegistries.ENCHANTMENTS.getKey(instance).toString())) return false;
-            return instance.canApplyAtEnchantingTable(stack);
+            if (ENCHANTMENT_LIST.get().contains(ForgeRegistries.ENCHANTMENTS.getKey(enchantment).toString())) return false;
+            return enchantment.canApplyAtEnchantingTable(pStack) || (flag && enchantment.isAllowedOnBooks());
         } else {
-            return instance.canApplyAtEnchantingTable(stack) && ENCHANTMENT_LIST.get().contains(ForgeRegistries.ENCHANTMENTS.getKey(instance).toString());
+            return (enchantment.canApplyAtEnchantingTable(pStack) || (flag && enchantment.isAllowedOnBooks())) && ENCHANTMENT_LIST.get().contains(ForgeRegistries.ENCHANTMENTS.getKey(enchantment).toString());
         }
     }
 
